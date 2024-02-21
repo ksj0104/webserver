@@ -10,7 +10,9 @@ const sessions = {};
 // 클라이언트 접속자 리스트
 let clients = [];
 
-const wss = new WebSocket.Server({ port: 3030 });
+const https_host = "10.10.30.241"
+const ws_host = "10.10.30.241"
+const wss = new WebSocket.Server({ host: ws_host, port: 3030 });
 
 // HTTP 서버 생성
 const server = http.createServer((req, res) => {
@@ -68,8 +70,8 @@ const server = http.createServer((req, res) => {
 
 // 서버를 시작합니다.
 const port = 3000;
-server.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}/`);
+server.listen(port, https_host, () => {
+    console.log(`Server running at http://${https_host}:${port}/`);
 });
 
 // 쿠키를 파싱하는 함수
