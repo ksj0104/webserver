@@ -10,11 +10,7 @@ const sessions = {};
 // 클라이언트 접속자 리스트
 let clients = [];
 
-const host = "https://ksj0104.github.io/webserver/"
-// 서버를 시작합니다.
-
-const wshost = "ws://ksj0104.github.io/webserver/"
-const wss = new WebSocket.Server({ wshost });
+const wss = new WebSocket.Server({ port: 3030 });
 
 // HTTP 서버 생성
 const server = http.createServer((req, res) => {
@@ -70,11 +66,11 @@ const server = http.createServer((req, res) => {
     }
 });
 
+// 서버를 시작합니다.
 const port = 3000;
-server.listen(port, host, () => {
-    console.log(`Server running at ${host}:${port}/`);
+server.listen(port, host() => {
+    console.log(`Server running at http://localhost:${port}/`);
 });
-
 
 // 쿠키를 파싱하는 함수
 function parseCookies(req) {
