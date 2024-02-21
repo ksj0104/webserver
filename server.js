@@ -9,10 +9,15 @@ const sessions = {};
 
 // 클라이언트 접속자 리스트
 let clients = [];
+let player = [];
+
 
 const https_host = "10.10.30.241"
 const ws_host = "10.10.30.241"
 const wss = new WebSocket.Server({ host: ws_host, port: 3030 });
+
+
+const word = ["사과", "원숭이", "기차", "비행기", "바나나"]
 
 // HTTP 서버 생성
 const server = http.createServer((req, res) => {
@@ -119,13 +124,32 @@ function change_id(o_id, w_id){
     })
 }
 
+function boardcastMSG(type, context){
+    clients.forEach(client => {
+        client.ws.send(JSON.stringify({ type: type, data: context }));
+    });
+}
+
+function boardcastMSG_g(type, context){
+    players.forEach(player=> {
+        client.ws.send(JSON.stringify({ type: type, data: context }));
+    });
+}
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+let button_state = 1;
+let speak_person = "";
+
 wss.on('connection', function connection(ws) {
     console.log('New client connected');
     let userID = ""
     while(true){
         userID = 'User' + Math.floor(Math.random() * 100000); // 임의의 사용자 아이디 생성
         if(dup_id_check(userID)){
-            clients.push({ ws: ws, userID: userID });
+            clients.push({ ws: ws, userID: userID});
             break;
         }
     }  
@@ -138,10 +162,9 @@ wss.on('connection', function connection(ws) {
         }
         else if(state_flag == 2){
             // 새로운 클라이언트가 접속할 때마다 접속자 리스트를 모든 클라이언트에게 전송
-            broadcastUserList();
-            clients.forEach(client => {
-                client.ws.send(JSON.stringify({ type: 'chat', data: userID + " 님이 입장 하셨습니다." }));
-            });
+            broadcastUserList('userList', clients);
+            broadcastButton();
+            boardcastMSG('chat', userID + " 님이 입장 하셨습니다.")
             state_flag = 3;
         }
     }
@@ -152,10 +175,22 @@ wss.on('connection', function connection(ws) {
         const sp = "qmwnburqiowe"
         let msg = message.toString('utf-8').split(sp)
         if (msg[0] =='send_chat'){
-            console.log('Received:', message.data);
-            clients.forEach(client => {
-                client.ws.send(JSON.stringify({ type: 'chat', data: msg[1]}));
-            });
+            if(speak_person == ""){
+                console.log('Received:', message.data);
+                boardcastMSG('chat', msg[1])
+            }
+            else{
+                // 게임중
+                let name = msg[1].split(":");
+                console.log(msg[1])
+                if(speak_person == name[0]){
+                    console.log('Received:', message.data);
+                    boardcastMSG('chat', msg[1])
+                }
+                else{
+
+                }
+            }
         }
         else if(msg[0] == 'change_id'){
             let nick = msg[1].split(":")
@@ -172,7 +207,11 @@ wss.on('connection', function connection(ws) {
             else{
                 console.log("중복 id");
             }
-            broadcastUserList();
+            broadcastUserList('userList', clients);
+            broadcastButton();
+        }
+        else if(msg[0] == "liar_game"){
+            game();
         }
     });
 
@@ -182,17 +221,66 @@ wss.on('connection', function connection(ws) {
 
         // 클라이언트 정보 제거
         clients = clients.filter(client => client.ws !== ws);
-
         // 클라이언트가 연결을 종료할 때마다 접속자 리스트를 모든 클라이언트에게 전송
-        broadcastUserList();
+        broadcastUserList('userList', clients);
     });
 });
 
+function getRandomInt(min, max) {
+    min = Math.ceil(min); // 최소값 올림
+    max = Math.floor(max); // 최대값 내림
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+async function game(){
+
+    boardcastMSG('chat', "누군가 시작 버튼을 눌렀습니다.")
+    // 모든 사용자에게 비활성화 시그널 보냄
+    players = [];
+    clients.forEach(client =>{
+        players.push(client)
+    })
+    button_state = 0;
+    broadcastButton();
+
+    let n = getRandomInt(0, players.length - 1)
+    let m = getRandomInt(0, word.length - 1)
+    console.log(n, m)
+    players.forEach(player=>{
+        if(n == 0){
+            player.ws.send(JSON.stringify({ type: 'liar', data: "라이어" }))   
+        }
+        else{
+            player.ws.send(JSON.stringify({ type: 'liar', data: word[m] }))
+        }
+        n -= 1;
+    })
+
+    for(let i = 0 ; i < players.length; i ++){
+        speak_person = players[i].userID;
+        boardcastMSG('chat', players[i].userID + "가 제시어를 설명할 차례입니다. (15초)");
+        await delay(15000)
+    }
+    speak_person = "";
+
+    boardcastMSG('chat', "라이어를 투표해주세요. (20초)")
+    broadcastUserList('vote', players);
+    await delay(20000)
+
+    broadcastUserList('vote', []);
+    
+}
 // 접속자 리스트를 모든 클라이언트에게 전송하는 함수
-function broadcastUserList() {
-    const userList = clients.map(client => client.userID);
-    const message = JSON.stringify({ type: 'userList', data: userList});
-    clients.forEach(client => {
+function broadcastUserList(type, ulist) {
+    const userList = ulist.map(client => client.userID);
+    const message = JSON.stringify({ type: type, data: userList});
+    ulist.forEach(client => {
         client.ws.send(message);
+    });
+}
+function broadcastButton(){
+    //button_state
+    clients.forEach(client => {
+        client.ws.send(JSON.stringify({ type: 'button', data: button_state}));
     });
 }
