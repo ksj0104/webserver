@@ -42,7 +42,20 @@ const server = http.createServer((req, res) => {
                 res.end(data);
             }
         });
-    } else {
+    } 
+    else if (req.url === '/script.js') {
+        const filePath = path.join(__dirname, 'script.js');
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+                res.writeHead(404, {'Content-Type': 'text/plain'});
+                res.end('404 Not Found');
+            } else {
+                res.writeHead(200, {'Content-Type': 'text/javascript'});
+                res.end(data);
+            }
+        });
+    }
+    else {
         // 다른 경로로의 요청에 대해서는 404 에러를 반환합니다.
         res.writeHead(404, {'Content-Type': 'text/plain'});
         res.end('404 Not Found');
