@@ -2,9 +2,15 @@ const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const WebSocket = require('ws');
 
 // 사용자 세션을 저장할 객체
 const sessions = {};
+
+// 클라이언트 접속자 리스트
+let clients = [];
+
+const wss = new WebSocket.Server({ port: 3030 });
 
 // HTTP 서버 생성
 const server = http.createServer((req, res) => {
@@ -31,8 +37,6 @@ const server = http.createServer((req, res) => {
         // 파일을 비동기적으로 읽습니다.
         fs.readFile(filePath, (err, data) => {
             if (err) {
-                // 파일을 찾을 수 없거나 읽을 수 없는 경우 404 에러를 반환합니다.
-
                 res.writeHead(404, {'Content-Type': 'text/plain'});
                 res.end('404 Not Found');
             } else {
@@ -91,4 +95,46 @@ function generateSessionID() {
 // 사용자 아이디 생성 함수
 function generateUserID() {
     return crypto.randomBytes(8).toString('hex');
+}
+
+
+
+wss.on('connection', function connection(ws) {
+    console.log('New client connected');
+    const userID = 'User' + Math.floor(Math.random() * 1000); // 임의의 사용자 아이디 생성
+    clients.push({ ws: ws, userID: userID });
+
+    // 새로운 클라이언트가 접속할 때마다 접속자 리스트를 모든 클라이언트에게 전송
+    broadcastUserList();
+    clients.forEach(client => {
+        client.ws.send(JSON.stringify({ type: 'chat', data: userID + " 님이 입장 하셨습니다." }));
+    });
+
+    // 클라이언트가 메시지를 보낼 때
+    ws.on('message', function incoming(message) {
+        console.log('Received:', message);
+        clients.forEach(client => {
+            client.ws.send(JSON.stringify({ type: 'chat', data: message.toString('utf-8')}));
+        });
+    });
+
+    // 클라이언트가 연결을 종료할 때
+    ws.on('close', function close() {
+        console.log('Client disconnected');
+
+        // 클라이언트 정보 제거
+        clients = clients.filter(client => client.ws !== ws);
+
+        // 클라이언트가 연결을 종료할 때마다 접속자 리스트를 모든 클라이언트에게 전송
+        broadcastUserList();
+    });
+});
+
+// 접속자 리스트를 모든 클라이언트에게 전송하는 함수
+function broadcastUserList() {
+    const userList = clients.map(client => client.userID);
+    const message = JSON.stringify({ type: 'userList', data: userList});
+    clients.forEach(client => {
+        client.ws.send(message);
+    });
 }
