@@ -27,6 +27,25 @@ const server = http.createServer((req, res) => {
     // 사용자에게 세션 아이디와 사용자 아이디를 보여줍니다.
     res.writeHead(200, {'Content-Type': 'text/plain'});
     res.end(`Session ID: ${sessionID}\nUser ID: ${sessions[sessionID].userID}`);
+    if (req.url === '/' || req.url === '/index.html') {
+        const filePath = path.join(__dirname, 'index.html');
+        // 파일을 비동기적으로 읽습니다.
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+                // 파일을 찾을 수 없거나 읽을 수 없는 경우 404 에러를 반환합니다.
+                res.writeHead(404, {'Content-Type': 'text/plain'});
+                res.end('404 Not Found');
+            } else {
+                // 정상적으로 파일을 읽은 경우 HTML 내용을 반환합니다.
+                res.writeHead(200, {'Content-Type': 'text/html'});
+                res.end(data);
+            }
+        });
+    } else {
+        // 다른 경로로의 요청에 대해서는 404 에러를 반환합니다.
+        res.writeHead(404, {'Content-Type': 'text/plain'});
+        res.end('404 Not Found');
+    }
 });
 
 // 서버를 시작합니다.
