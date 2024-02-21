@@ -68,7 +68,7 @@ const server = http.createServer((req, res) => {
 
 // 서버를 시작합니다.
 const port = 3000;
-server.listen(port, host() => {
+server.listen(port, () => {
     console.log(`Server running at http://localhost:${port}/`);
 });
 
