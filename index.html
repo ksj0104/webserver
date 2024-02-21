@@ -3,31 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Room</title>
+    <title>MIDASIT</title>
     <style>
         /* CSS 스타일링 */
         #chatContainer {
-            width: 400px;
+            width: 600px;
             margin: 0 auto;
             padding: 20px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
         #chatMessages {
-            height: 200px;
+            width: 60%;
+            float: left; /* 왼쪽으로 배치 */
+            height: 700px;
             overflow-y: scroll;
             border: 1px solid #ccc;
             padding: 10px;
             margin-bottom: 10px;
         }
         #userList {
+            width: 30%;
+            height: 400px;
+            float: right; /* 오른쪽으로 배치 */
             list-style-type: none;
-            padding: 0;
-            margin: 0;
+            padding: 10px;
+            margin-bottom: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
             padding: 10px;
-            height: 200px;
             overflow-y: scroll;
         }
         #messageInput {
@@ -39,37 +43,45 @@
             padding: 5px 10px;
             cursor: pointer;
         }
-    </style>
+        /* ul 요소 스타일링 */
+        ul {
+            list-style-type: none; /* 리스트 마커 제거 */
+            padding: 0; /* 내부 여백 제거 */
+            margin: 0; /* 외부 여백 제거 */
+        }
 
+        /* 리스트 아이템 스타일링 */
+        li {
+            padding: 8px 0; /* 위아래로 8px의 여백 설정 */
+            border-bottom: 1px solid #ccc; /* 아이템 간 구분선 설정 */
+            font-size: 14px; /* 폰트 크기 설정 */
+        }
+    </style>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" href="http://www.midasit.com/favicon.ico?v=2">
 </head>
 <body>
     <div id="chatContainer">
-        <!-- 접속자 리스트 -->
-        <h2>Users</h2>
-        <ul id="userList"></ul>
-
-        <!-- 채팅 보기 창 -->
-        <ul id="chatMessages"></ul>
-
+        <div>
+            <ul id="userList"></ul>
+        </div>
 
         <!-- 채팅 입력 텍스트 창 및 전송 버튼 -->
         <div>
+            <ul id="chatMessages"></ul>
             <input type="text" id="messageInput" placeholder="Type your message">
             <button id="sendButton">Send</button>
+            <button id="nickButton">닉변</button>
         </div>
     </div>
 
     <script>
-
-        const host = "10.10.30.241"
         // WebSocket 연결
         const ws = new WebSocket('ws://10.10.30.241:3030');
-
-        // 웹 소켓 연결이 수립되면 서버에 접속 요청
         ws.onopen = function(event) {
             console.log('Connected to WebSocket server');
         };
-
+        let uid = "test"
         // 웹 소켓으로부터 메시지를 받았을 때
         ws.onmessage = function(event) {
             const message = JSON.parse(event.data);
@@ -79,7 +91,10 @@
                 updateUserList(message.data);
             }
             if(message.type == 'chat'){
-                displayMessage(message.data)
+                displayMessage(message.data);
+            }
+            if(message.type == 'uid'){
+                uid = message.data;
             }
         };
 
@@ -90,6 +105,10 @@
             userListElement.innerHTML = '';
             userList.forEach(user => {
                 const listItem = document.createElement('li');
+                console.log(user, uid);
+                if (user == uid){
+                    user += " (me)";
+                }
                 listItem.textContent = user;
                 userListElement.appendChild(listItem);
             });
@@ -102,18 +121,46 @@
             const messageElement = document.createElement('div');
             messageElement.textContent = message;
             chatMessagesElement.appendChild(messageElement);
-            // 채팅 보기 창을 항상 가장 아래로 스크롤
             chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
         }
+
+       document.getElementById('messageInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                const messageInput = document.getElementById('messageInput');
+                const message = messageInput.value.trim();
+                if (message !== '') {
+                    let msg = "send_chatqmwnburqiowe" + uid + ": " + message;
+                    msg = msg.toString('utf-8')
+                    console.log(msg)
+                    ws.send(msg);
+                    messageInput.value = '';
+                }
+            }
+        });
+
+        document.getElementById('nickButton').addEventListener('click', function() {
+            // 사용자 아이디 입력 받기
+            const userID = prompt('Enter your ID:');
+            if (userID) {
+                let msg = "change_idqmwnburqiowe"+ uid + ":" + userID;
+                ws.send(msg.trim());
+            }
+            else{
+                console.log("cancel");
+            }
+        });
 
         // 채팅 전송 버튼 클릭 이벤트 핸들러
         document.getElementById('sendButton').addEventListener('click', function() {
             const messageInput = document.getElementById('messageInput');
-            const message = messageInput.value.trim();
-            if (message !== '') {
-                ws.send(message + "");
-                messageInput.value = ''; // 입력 창 비우기
-            }
+                const message = messageInput.value.trim();
+                if (message !== '') {
+                    let msg = "send_chatqmwnburqiowe" + uid + ": " + message;
+                    msg = msg.toString('utf-8')
+                    console.log(msg)
+                    ws.send(msg);
+                    messageInput.value = '';
+                }
         });
     </script>
 </body>
