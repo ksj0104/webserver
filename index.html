@@ -3,29 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Website</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f0f0f0;
-        }
-        .container {
-            text-align: center;
-        }
-        h1 {
-            color: #333;
-        }
-    </style>
+    <title>Enter Your ID</title>
+
+    <!-- JavaScript 파일 로드 -->
+    <script src="script.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Hello, World!</h1>
-    </div>
+    <script>
+        // 다이얼로그 창을 표시하여 사용자 아이디를 입력받는 함수
+        function enterID() {
+            // 사용자 아이디 입력 받기
+            const userID = prompt('Enter your ID:');
+            if (userID) {
+                // 사용자 아이디를 서버로 전송
+                login_state(userID);
+            }
+        }
+        // 페이지가 로드되면 다이얼로그 창 표시
+        window.onload = enterID;
+    </script>
 </body>
 </html>
