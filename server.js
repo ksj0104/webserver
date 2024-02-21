@@ -13,7 +13,7 @@ let clients = [];
 const host = "https://ksj0104.github.io/webserver/"
 // 서버를 시작합니다.
 
-const wshost = "https://ksj0104.github.io/webserver/:3030"
+const wshost = "ws://ksj0104.github.io/webserver/:3030"
 const wss = new WebSocket.Server({ wshost });
 
 // HTTP 서버 생성
