@@ -7,41 +7,63 @@
     <style>
         /* CSS 스타일링 */
         #chatContainer {
-            width: 600px;
-            margin: 0 auto;
-            padding: 20px;
+            width: 800px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            margin: 2%;
         }
         #chatMessages {
-            width: 60%;
-            float: left; /* 왼쪽으로 배치 */
-            height: 700px;
+            height: 85%;
             overflow-y: scroll;
             border: 1px solid #ccc;
-            padding: 10px;
-            margin-bottom: 10px;
+            margin: 2%;
         }
         #userList {
-            width: 30%;
-            height: 400px;
-            float: right; /* 오른쪽으로 배치 */
+            height: 40%;
             list-style-type: none;
-            padding: 10px;
             margin-bottom: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            overflow-y: scroll;
+            margin: 2%;
+        }
+        #liarList{
+            height: 40%;
+            list-style-type: none;
             padding: 10px;
+            margin: 2%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
             overflow-y: scroll;
         }
         #messageInput {
             width: 70%;
-            padding: 5px;
-            margin-right: 5px;
+            margin: 2%;
         }
-        #sendButton {
-            padding: 5px 10px;
+        #startButton {
+            margin: 2%;
             cursor: pointer;
+        }
+        #nickButton {
+            margin: 2%;
+            cursor: pointer;
+        }
+        .left {
+            width: 55%;
+            float: left;
+            height: 700px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin: 2%;
+        }
+
+        .right {
+            width: 35%;
+            float: right;
+            height: 700px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin: 2%;
         }
         /* ul 요소 스타일링 */
         ul {
@@ -61,17 +83,19 @@
     <link rel="icon" href="http://www.midasit.com/favicon.ico?v=2">
 </head>
 <body>
-    <div id="chatContainer">
-        <div>
-            <ul id="userList"></ul>
+    <div class = "chatContainer">
+        <div class="left">
+            <div id="chatMessages"></div>
+            <input type="text" id="messageInput" placeholder="Type your message">
+            <button id="nickButton">닉변</button>
+            <button id="startButton">시작</button>
         </div>
 
         <!-- 채팅 입력 텍스트 창 및 전송 버튼 -->
-        <div>
-            <ul id="chatMessages"></ul>
-            <input type="text" id="messageInput" placeholder="Type your message">
-            <button id="sendButton">Send</button>
-            <button id="nickButton">닉변</button>
+        <div class="right">
+            <ul id="userList"></ul>
+            <h4> 투표 리스트</h4>
+            <ul id="liarList"></ul>
         </div>
     </div>
 
@@ -96,6 +120,26 @@
             if(message.type == 'uid'){
                 uid = message.data;
             }
+            if(message.type == 'button'){
+                if(message.data == '1'){
+                    displayMessage("라이어 게임이 종료되었습니다.");
+                    const startButton = document.getElementById('startButton');
+                    startButton.disabled = 0; // 버튼 상태 변경
+                }
+                else{
+                    const startButton = document.getElementById('startButton');
+                    const nickButton = document.getElementById('nickButton');
+                    startButton.disabled = 1; // 버튼 상태 변경
+                    nickButton.disabled = 1; // 버튼 상태 변경
+                }
+            }
+            if(message.type == 'liar'){
+                vote_change = 1;
+                displayMessage("이 문구는 당신만 볼 수 있습니다. 제시어 : " + message.data);
+            }
+            if(message.type == 'vote'){
+                updateVoteList(message.data);
+            }
         };
 
 
@@ -114,12 +158,42 @@
             });
         }
 
+        function updateVoteList(userList) {
+            const userListElement = document.getElementById('liarList');
+            userListElement.innerHTML = '';
+            userList.forEach(user => {
+                const listItem = document.createElement('vote_button');
+                console.log(user, uid);
+                listItem.textContent = user;
+                userListElement.appendChild(listItem);
+            });
+        }
+
+        document.getElementById('vote_button').addEventListener('click', function() {
+
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            if (message !== '') {
+                let msg = "send_chatqmwnburqiowe" + uid + ": " + message;
+                msg = msg.toString('utf-8')
+                console.log(msg)
+                ws.send(msg);
+                messageInput.value = '';
+            }
+        });
+
 
         // 채팅 메시지 출력 함수
         function displayMessage(message) {
             const chatMessagesElement = document.getElementById('chatMessages');
             const messageElement = document.createElement('div');
-            messageElement.textContent = message;
+
+            const currentDate = new Date();
+            const hours = String(currentDate.getHours()).padStart(2, '0'); // 시간을 두 자리 숫자로 포맷팅
+            const minutes = String(currentDate.getMinutes()).padStart(2, '0'); // 분을 두 자리 숫자로 포맷팅
+            const formattedTime = `${hours}:${minutes}`;
+
+            messageElement.textContent = message + " (" + formattedTime+ ")";
             chatMessagesElement.appendChild(messageElement);
             chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
         }
@@ -150,18 +224,27 @@
             }
         });
 
+        // // 채팅 전송 버튼 클릭 이벤트 핸들러
+        // document.getElementById('sendButton').addEventListener('click', function() {
+        //     const messageInput = document.getElementById('messageInput');
+        //     const message = messageInput.value.trim();
+        //     if (message !== '') {
+        //         let msg = "send_chatqmwnburqiowe" + uid + ": " + message;
+        //         msg = msg.toString('utf-8')
+        //         console.log(msg)
+        //         ws.send(msg);
+        //         messageInput.value = '';
+        //     }
+        // });
+
         // 채팅 전송 버튼 클릭 이벤트 핸들러
-        document.getElementById('sendButton').addEventListener('click', function() {
-            const messageInput = document.getElementById('messageInput');
-                const message = messageInput.value.trim();
-                if (message !== '') {
-                    let msg = "send_chatqmwnburqiowe" + uid + ": " + message;
-                    msg = msg.toString('utf-8')
-                    console.log(msg)
-                    ws.send(msg);
-                    messageInput.value = '';
-                }
+        document.getElementById('startButton').addEventListener('click', function() {
+            let msg = "liar_gameqmwnburqiowestart";
+            msg = msg.toString('utf-8')
+            console.log(msg)
+            ws.send(msg);
         });
+
     </script>
 </body>
 </html>
