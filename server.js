@@ -99,25 +99,81 @@ function generateUserID() {
     return crypto.randomBytes(8).toString('hex');
 }
 
+function dup_id_check(w_id){
 
+    for(let i = 0 ; i < clients.length; i ++){
+        if(clients[i].userID == w_id){
+            console.log("duplicated id")
+            return false;
+        }
+    }
+    return true;
+}
+
+function change_id(o_id, w_id){
+    clients.forEach(client =>{
+        if(client.userID == o_id){
+            client.userID = w_id;
+            return;
+        }
+    })
+}
 
 wss.on('connection', function connection(ws) {
     console.log('New client connected');
-    const userID = 'User' + Math.floor(Math.random() * 1000); // 임의의 사용자 아이디 생성
-    clients.push({ ws: ws, userID: userID });
+    let userID = ""
+    while(true){
+        userID = 'User' + Math.floor(Math.random() * 100000); // 임의의 사용자 아이디 생성
+        if(dup_id_check(userID)){
+            clients.push({ ws: ws, userID: userID });
+            break;
+        }
+    }  
+    let state_flag = 1;
 
-    // 새로운 클라이언트가 접속할 때마다 접속자 리스트를 모든 클라이언트에게 전송
-    broadcastUserList();
-    clients.forEach(client => {
-        client.ws.send(JSON.stringify({ type: 'chat', data: userID + " 님이 입장 하셨습니다." }));
-    });
+    while(state_flag !== 3){
+        if (state_flag == 1){
+            ws.send(JSON.stringify({ type: 'uid', data: userID.toString('utf-8')}));
+            state_flag = 2;
+        }
+        else if(state_flag == 2){
+            // 새로운 클라이언트가 접속할 때마다 접속자 리스트를 모든 클라이언트에게 전송
+            broadcastUserList();
+            clients.forEach(client => {
+                client.ws.send(JSON.stringify({ type: 'chat', data: userID + " 님이 입장 하셨습니다." }));
+            });
+            state_flag = 3;
+        }
+    }
+
 
     // 클라이언트가 메시지를 보낼 때
     ws.on('message', function incoming(message) {
-        console.log('Received:', message);
-        clients.forEach(client => {
-            client.ws.send(JSON.stringify({ type: 'chat', data: message.toString('utf-8')}));
-        });
+        const sp = "qmwnburqiowe"
+        let msg = message.toString('utf-8').split(sp)
+        if (msg[0] =='send_chat'){
+            console.log('Received:', message.data);
+            clients.forEach(client => {
+                client.ws.send(JSON.stringify({ type: 'chat', data: msg[1]}));
+            });
+        }
+        else if(msg[0] == 'change_id'){
+            let nick = msg[1].split(":")
+            console.log(nick[0], "->", nick[1])
+            if(dup_id_check(nick[1]) == true){
+                change_id(nick[0], nick[1])
+                clients.forEach(client =>{
+                    if(client.userID == nick[1]){
+                        client.ws.send(JSON.stringify({ type: 'uid', data: nick[1] }))
+                        console.log("변경 완료");
+                    }
+                })
+            }
+            else{
+                console.log("중복 id");
+            }
+            broadcastUserList();
+        }
     });
 
     // 클라이언트가 연결을 종료할 때
