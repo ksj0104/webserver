@@ -153,7 +153,7 @@
             }
             if(message.type == 'liar'){
                 vote_change = 1;
-                displayMessage("이 문구는 당신만 볼 수 있습니다. 제시어 : " + message.data);
+                displayMessage(message.data);
             }
             if(message.type == 'vote'){
                 updateVoteList(message.data);
