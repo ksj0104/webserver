@@ -11,7 +11,7 @@ const sessions = {};
 let clients = [];
 let player = [];
 let votes = [];
-
+let _chat_state = 0;
 const https_host = "10.10.30.241"
 const ws_host = "10.10.30.241"
 const wss = new WebSocket.Server({ host: ws_host, port: 3030 });
@@ -144,7 +144,7 @@ function delay(ms) {
 
 let button_state = 1;
 let speak_person = "";
-
+let liar_final_word = "";
 wss.on('connection', function connection(ws) {
     console.log('New client connected');
     let userID = ""
@@ -186,8 +186,15 @@ wss.on('connection', function connection(ws) {
                 let name = msg[1].split(":");
                 console.log(msg[1])
                 if(speak_person == name[0]){
-                    console.log('Received:', message.data);
-                    boardcastMSG('chat', msg[1])
+
+                    if(_chat_state ==1){
+                        liar_final_word = msg[1].split(': ')[1].trim();
+                        boardcastMSG('chat', msg[1])
+                    }
+                    else{
+                        console.log('Received:', message.data);
+                        boardcastMSG('chat', msg[1])
+                    }
                 }
                 else{
 
@@ -251,6 +258,8 @@ async function game(){
     button_state = 0;
     broadcastButton();
     let liar = "";
+    let sub_word = "";
+
     let n = getRandomInt(0, players.length - 1)
     let m = getRandomInt(0, word.length - 1)
     console.log(n, m)
@@ -264,6 +273,7 @@ async function game(){
         }
         n -= 1;
     })
+    sub_word = word[m];
 
     boardcastMSG('chat', "잠시 후 게임이 시작됩니다.");
     for(let i = 3; i >= 0 ; i--){
@@ -341,19 +351,32 @@ async function game(){
         else{
             boardcastMSG('chat', mostFrequentWord + "님이 라이어로 지목되었습니다.");
             if(mostFrequentWord == liar){
-                boardcastMSG('chat', mostFrequentWord + "님은 라이어입니다. 라이어는 제시어를 맞추면 승리할 수 있습니다. 제시어를 입력해주세요.");
+                _chat_state = 1;
+                speak_person = mostFrequentWord;
+                boardcastMSG('chat', mostFrequentWord + "님은 라이어가 맞습니다. 라이어는 제시어를 맞추면 승리할 수 있습니다. 제시어를 입력해주세요. 가장 마지막에 입력한 단어가 기준이 됩니다.");
                 for(let i = 15; i >= 0 ; i--){
                     clients.forEach(client => {
                         client.ws.send(JSON.stringify({ type: 'time', data: i}));
                     });
                     await delay(1000)
                 }
-                
+
+                speak_person = "";
+
+                boardcastMSG('chat', "제시어 : [" + sub_word + "] 라이어가 입력한 제시어 : [" + liar_final_word+"]");
+                if(sub_word == liar_final_word){
+                    boardcastMSG('chat', mostFrequentWord + "님이 제시어를 알아냈으므로 라이어의 승리입니다. 게임을 종료합니다.");
+                }
+                else{
+                    boardcastMSG('chat', mostFrequentWord + "님이 제시어를 모르므로 시민의 승리입니다. 게임을 종료합니다.");
+                }
             }
             else{
                 boardcastMSG('chat', mostFrequentWord + "님이 라이어가 아닙니다. 라이어는 " + liar + "님 입니다. 게임을 종료합니다.");  
             }
+            _chat_state = 0;
             button_state = 1;
+            liar_final_word = "";
             broadcastButton();
             break;
         }
