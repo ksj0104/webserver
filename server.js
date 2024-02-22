@@ -16,10 +16,15 @@ const https_host = "10.10.30.241"
 const ws_host = "10.10.30.241"
 const wss = new WebSocket.Server({ host: ws_host, port: 3030 });
 
-const vote_time = 10;
-const desc_time = 3;
+const vote_time = 20;
+const desc_time = 15;
 
-const word = ["사과", "원숭이", "기차", "비행기", "바나나"]
+const cate = ["음식", "직업"]
+const word =  {};
+
+word["음식"] = ["비빔밥", "배추김치", "삼계탕", "불고기", "떡볶이", "삼겹살", "김밥", "잡채", "김치찌개", "순두부찌개", "냉면", "해물파전"]
+word["직업"] = ["영화배우", "영화감독", "선생님", "개발자", "기획자", "소방관", "경찰관", "대통령", "목사", "신부"]
+
 
 // HTTP 서버 생성
 const server = http.createServer((req, res) => {
@@ -166,7 +171,7 @@ wss.on('connection', function connection(ws) {
             // 새로운 클라이언트가 접속할 때마다 접속자 리스트를 모든 클라이언트에게 전송
             broadcastUserList('userList', clients);
             broadcastButton();
-            boardcastMSG('chat', userID + " 님이 입장 하셨습니다.")
+            boardcastMSG('chat', "[info] " + userID + " 님이 입장 하셨습니다.")
             state_flag = 3;
         }
     }
@@ -249,7 +254,7 @@ function getRandomInt(min, max) {
 
 async function game(){
 
-    boardcastMSG('chat', "누군가 시작 버튼을 눌렀습니다.")
+    boardcastMSG('chat', "[info] " + "누군가 시작 버튼을 눌렀습니다.")
     // 모든 사용자에게 비활성화 시그널 보냄
     players = [];
     clients.forEach(client =>{
@@ -259,23 +264,23 @@ async function game(){
     broadcastButton();
     let liar = "";
     let sub_word = "";
-
+    let cate_idx = getRandomInt(0, cate.length - 1)
     let n = getRandomInt(0, players.length - 1)
-    let m = getRandomInt(0, word.length - 1)
+    let m = getRandomInt(0, word[cate[cate_idx]].length - 1)
     console.log(n, m)
     players.forEach(player=>{
         if(n == 0){
             liar = player.userID;
-            player.ws.send(JSON.stringify({ type: 'liar', data: "라이어" }))   
+            player.ws.send(JSON.stringify({ type: 'liar', data: "[info] " + "당신은 [라이어] 입니다." }))   
         }
         else{
-            player.ws.send(JSON.stringify({ type: 'liar', data: word[m] }))
+            player.ws.send(JSON.stringify({ type: 'liar', data: "[info] " + "이 문구는 당신만 볼 수 있습니다. 제시어 : [" + word[cate[cate_idx]][m]+"]" }))
         }
         n -= 1;
     })
-    sub_word = word[m];
+    sub_word = word[cate[cate_idx]][m];
 
-    boardcastMSG('chat', "잠시 후 게임이 시작됩니다.");
+    boardcastMSG('chat', "[info] " + "주제는 [" + cate[cate_idx] + "] 입니다. 잠시 후 게임이 시작됩니다.");
     for(let i = 3; i >= 0 ; i--){
         clients.forEach(client => {
             client.ws.send(JSON.stringify({ type: 'time', data: i}));
@@ -285,7 +290,7 @@ async function game(){
 
     for(let i = 0 ; i < players.length; i ++){
         speak_person = players[i].userID;
-        boardcastMSG('chat', players[i].userID + "가 제시어를 설명할 차례입니다. (15초)");
+        boardcastMSG('chat', "[info] " + players[i].userID + "가 제시어를 설명할 차례입니다. (15초)");
         for(let i = desc_time; i >= 0 ; i--){
             clients.forEach(client => {
                 client.ws.send(JSON.stringify({ type: 'time', data: i}));
@@ -297,7 +302,7 @@ async function game(){
 
     while(true){
 
-        boardcastMSG('chat', "라이어를 투표해주세요. (20초)")
+        boardcastMSG('chat', "[info] " + "라이어를 투표해주세요. (20초)")
         broadcastUserList('vote', players);
         for(let i = vote_time; i >= 0 ; i--){
             clients.forEach(client => {
@@ -308,7 +313,7 @@ async function game(){
 
         broadcastUserList('de_vote', players);
 
-        boardcastMSG('chat', "투표를 집계중입니다.")
+        boardcastMSG('chat', "[info] " + "투표를 집계중입니다.")
         for(let i = 3; i >= 0 ; i--){
             clients.forEach(client => {
                 client.ws.send(JSON.stringify({ type: 'time', data: i}));
@@ -346,14 +351,14 @@ async function game(){
                 }
             });
 
-            boardcastMSG('chat', "동표가 나와 재투표를 진행합니다. 동점자: " + same_list);
+            boardcastMSG('chat', "[info] " + "동표가 나와 재투표를 진행합니다. 동점자: " + same_list);
         }
         else{
-            boardcastMSG('chat', mostFrequentWord + "님이 라이어로 지목되었습니다.");
+            boardcastMSG('chat', "[info] " +  mostFrequentWord + "님이 라이어로 지목되었습니다.");
             if(mostFrequentWord == liar){
                 _chat_state = 1;
                 speak_person = mostFrequentWord;
-                boardcastMSG('chat', mostFrequentWord + "님은 라이어가 맞습니다. 라이어는 제시어를 맞추면 승리할 수 있습니다. 제시어를 입력해주세요. 가장 마지막에 입력한 단어가 기준이 됩니다.");
+                boardcastMSG('chat',"[info]" +  mostFrequentWord + "님은 라이어가 맞습니다. 라이어는 제시어를 맞추면 승리할 수 있습니다. 제시어를 입력해주세요. 띄어쓰기는 없으며 가장 마지막에 입력한 단어가 기준이 됩니다.");
                 for(let i = 15; i >= 0 ; i--){
                     clients.forEach(client => {
                         client.ws.send(JSON.stringify({ type: 'time', data: i}));
@@ -363,16 +368,16 @@ async function game(){
 
                 speak_person = "";
 
-                boardcastMSG('chat', "제시어 : [" + sub_word + "] 라이어가 입력한 제시어 : [" + liar_final_word+"]");
+                boardcastMSG('chat', "[info] " + "제시어 : [" + sub_word + "] 라이어가 입력한 제시어 : [" + liar_final_word+"]");
                 if(sub_word == liar_final_word){
-                    boardcastMSG('chat', mostFrequentWord + "님이 제시어를 알아냈으므로 라이어의 승리입니다. 게임을 종료합니다.");
+                    boardcastMSG('chat', "[info] " + mostFrequentWord + "님이 제시어를 알아냈으므로 라이어의 승리입니다. 게임을 종료합니다.");
                 }
                 else{
-                    boardcastMSG('chat', mostFrequentWord + "님이 제시어를 모르므로 시민의 승리입니다. 게임을 종료합니다.");
+                    boardcastMSG('chat', "[info] " + mostFrequentWord + "님이 제시어를 모르므로 시민의 승리입니다. 게임을 종료합니다.");
                 }
             }
             else{
-                boardcastMSG('chat', mostFrequentWord + "님이 라이어가 아닙니다. 라이어는 " + liar + "님 입니다. 게임을 종료합니다.");  
+                boardcastMSG('chat', "[info] " + mostFrequentWord + "님이 라이어가 아닙니다. 라이어는 " + liar + "님 입니다. 게임을 종료합니다.");  
             }
             _chat_state = 0;
             button_state = 1;
