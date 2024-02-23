@@ -12,8 +12,8 @@ let clients = [];
 let player = [];
 let votes = [];
 let _chat_state = 0;
-const https_host = "10.10.30.241"
-const ws_host = "10.10.30.241"
+const https_host = ""
+const ws_host = ""
 const wss = new WebSocket.Server({ host: ws_host, port: 3030 });
 
 const vote_time = 20;
