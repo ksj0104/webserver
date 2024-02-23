@@ -5,66 +5,140 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIDASIT</title>
     <style>
-        /* CSS 스타일링 */
-        #chatContainer {
-            width: 800px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin: 2%;
+        body {
+            background-color: #222;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
-        #chatMessages {
-            height: 85%;
-            overflow-y: scroll;
-            border: 1px solid #ccc;
-            margin: 2%;
+        .left-side{
+            flex: 7;
+            display: flex;
+            flex-direction: column;
         }
-        #userList {
-            height: 40%;
-            list-style-type: none;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            overflow-y: scroll;
-            margin: 2%;
+        .right-side{
+            flex: 3;
+            background-color: #444;
+            border-radius: 0 10px 10px 0;
         }
-        #liarList{
-            height: 40%;
-            list-style-type: none;
-            padding: 10px;
-            margin: 2%;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            overflow-y: scroll;
+        .right-top{
+            background-color: #100;
+            height:50%;
         }
-        #messageInput {
-            width: 70%;
-            margin: 2%;
-        }
-        #startButton {
-            margin: 2%;
-            cursor: pointer;
-        }
-        #nickButton {
-            margin: 2%;
-            cursor: pointer;
-        }
-        .left {
-            width: 55%;
-            float: left;
-            height: 700px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin: 2%;
+        .right-bottom{
+            background-color: #300;
+            height:50%;
         }
 
-        .right {
-            width: 35%;
-            float: right;
-            height: 700px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin: 2%;
+        .chat-container {
+            display: flex;
+            width: 70%;
+            height: 70%;
         }
+        .chat {
+            flex: 9.5;
+            overflow-y: auto;
+            background-color: #333;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .message-input {
+            flex: 0.5;
+            border: none;
+            background-color: #444;
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .user-list {
+            flex: 1;
+            background-color: #444;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .liar-list {
+            flex: 1;
+            background-color: #444;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .message {
+            color: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            max-width: 70%;
+            border-radius: 10px;
+            font-size: 14px; /* 폰트 크기 설정 */
+        }
+        .user-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .timestamp {
+            font-size: 0.8em;
+        }
+        .message-content {
+            padding: 10px;
+        }
+        .my-message {
+            background-color: #444;
+            align-self: flex-end; /* 내 채팅을 오른쪽에 정렬 */
+        }
+        .other-message {
+            background-color: #444;
+            align-self: flex-start; /* 상대방 채팅을 왼쪽에 정렬 */
+        }
+        .sidebar {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 15%;
+            background-color: #333;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 10px;
+        }
+        .sidebar-content {
+            padding: 20px;
+        }
+        .sidebar a {
+            padding: 10px 20px;
+            text-decoration: none;
+            font-size: 15px;
+            color: #fff;
+            display: block;
+            transition: 0.3s;
+        }
+        .sidebar a:hover {
+            background-color: #555;
+        }
+        /* 비활성화된 사이드바 링크 스타일 */
+        .sidebar a.disabled {
+            pointer-events: none; /* 클릭 이벤트 비활성화 */
+            color: #999; /* 비활성화된 색상 */
+        }
+
+        /* 사이드바 링크 스타일 (활성화) */
+        .sidebar a.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .open-sidebar {
+            width: 250px;
+        }
+        .menu-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+        }     
         .item {
             cursor: pointer; /* 마우스를 올렸을 때 포인터 모양으로 변경 */
             padding: 5px 10px;
@@ -78,8 +152,7 @@
         } 
         .item:hover {
             background-color: #f0f0f0; /* 마우스를 올렸을 때 배경색 변경 */
-        }
-        /* ul 요소 스타일링 */
+        }   
         ul {
             list-style-type: none; /* 리스트 마커 제거 */
             padding: 0; /* 내부 여백 제거 */
@@ -97,27 +170,41 @@
     <link rel="icon" href="http://www.midasit.com/favicon.ico?v=2">
 </head>
 <body>
-    <div class = "chatContainer">
-        <div class="left">
-            <div id="chatMessages"></div>
-            <input type="text" id="messageInput" placeholder="Type your message">
-            <button id="nickButton">닉변</button>
-            <button id="startButton">시작</button>
-            <!-- <button id="vote_button">투표</button> -->
+    <div class="chat-container">
+    <div class = "left-side">
+        <div class="chat" id="chatMessages">
         </div>
-
-        <!-- 채팅 입력 텍스트 창 및 전송 버튼 -->
-        <div class="right">
-            <ul id="userList"></ul>
-            <h4> 투표 리스트</h4>
-            <div id="liarList"></div>
+        <input type="text" class="message-input" id="messageInput" placeholder="메시지를 입력하세요..." autofocus>
+    </div>
+    <div class = "right-side">
+        <div class ="right_top">
+            <div class="user-list">
+                <ul id = "userList"></ul>
+            </div>
+        </div>
+        <div class= "right_bottom">
+            <div class="liar-list">
+                <ul id= "liarList"></ul>
+            </div>
             <div id="leftTimeBox">남은 시간: 0 초</div>
+        </div>
+    </div>
+    <div class="menu-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48">
+            <path fill="#FFFFFF" d="M3 12h4v2H3v-2zm5 0h4v2H8v-2zm5 0h4v2h-4v-2zm5 0h4v2h-4v-2zm1-6v2H3V6h16zM3 16h4v2H3v-2zm5 0h4v2H8v-2zm5 0h4v2h-4v-2zm5 0h4v2h-4v-2z"/>
+        </svg>
+    </div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-content">
+            <a href="#" onclick="change_nickname()">닉네임 변경</a>
+            <a href="#" onclick="game_start()">게임 시작</a>
+            <!-- 추가적인 사이드바 메뉴 항목 -->
         </div>
     </div>
 
     <script>
         // WebSocket 연결
-        const ws = new WebSocket('ws://127.0.0.1:3030');
+        const ws = new WebSocket('ws://10.10.30.241:3030');
         ws.onopen = function(event) {
             console.log('Connected to WebSocket server');
         };
@@ -141,14 +228,12 @@
                 if(message.data == '1'){
                     const startButton = document.getElementById('startButton');
                     const nickButton = document.getElementById('nickButton');
-                    startButton.disabled = 0; // 버튼 상태 변경
-                    nickButton.disabled = 0; // 버튼 상태 변경
+                    enableAllLists()
                 }
                 else{
                     const startButton = document.getElementById('startButton');
                     const nickButton = document.getElementById('nickButton');
-                    startButton.disabled = 1; // 버튼 상태 변경
-                    nickButton.disabled = 1; // 버튼 상태 변경
+                    disableList()
                 }
             }
             if(message.type == 'liar'){
@@ -166,6 +251,22 @@
                 update_time_box(message.data);
             }
         };
+
+        // 비활성화된 리스트
+        function disableList(listIndex) {
+            var links = document.querySelectorAll('.sidebar a');
+            links.forEach(function(link) {
+                link.classList.add('disabled');
+            });
+        }
+        
+        // 비활성화된 리스트 초기화
+        function enableAllLists() {
+            var links = document.querySelectorAll('.sidebar a');
+            links.forEach(function(link) {
+                link.classList.remove('disabled');
+            });
+        }
 
         function update_time_box(data){
             const timerElement = document.getElementById('leftTimeBox');
@@ -186,7 +287,7 @@
                 userListElement.appendChild(listItem);
             });
         }
-
+        
         function removeVoteList(){
             const userListElement = document.getElementById('liarList');
             userListElement.innerHTML = '';
@@ -241,7 +342,30 @@
             const minutes = String(currentDate.getMinutes()).padStart(2, '0'); // 분을 두 자리 숫자로 포맷팅
             const formattedTime = `${hours}:${minutes}`;
 
-            messageElement.textContent = message + " (" + formattedTime+ ")";
+            let chat_uid = message.split(': ')[0]
+            let chat_msg = message.split(': ')[1]
+            messageElement.classList.add('message')
+            if(chat_uid == uid){
+                messageElement.classList.add('my-message')
+            }
+            else{
+                messageElement.classList.add('other-message')
+            }
+            const uidElement = document.createElement('div')
+            uidElement.classList.add("user-name")
+            uidElement.textContent = chat_uid
+
+            const timeElement = document.createElement('div')
+            timeElement.classList.add("timestamp")
+            timeElement.textContent = formattedTime
+
+            const msgContent = document.createElement('div')
+            msgContent.classList.add("message-content")
+            msgContent.textContent = chat_msg
+
+            messageElement.appendChild(uidElement);
+            messageElement.appendChild(timeElement);
+            messageElement.appendChild(msgContent);
             chatMessagesElement.appendChild(messageElement);
             chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
         }
@@ -260,8 +384,7 @@
             }
         });
 
-        document.getElementById('nickButton').addEventListener('click', function() {
-            // 사용자 아이디 입력 받기
+        function change_nickname(){
             const userID = prompt('Enter your ID:');
             if (userID) {
                 let msg = "change_idqmwnburqiowe"+ uid + ":" + userID;
@@ -270,7 +393,26 @@
             else{
                 console.log("cancel");
             }
-        });
+        }
+
+        function game_start(){
+            let msg = "liar_gameqmwnburqiowestart";
+            msg = msg.toString('utf-8')
+            console.log(msg)
+            ws.send(msg);
+        }
+
+        // document.getElementById('nickButton').addEventListener('click', function() {
+        //     // 사용자 아이디 입력 받기
+        //     const userID = prompt('Enter your ID:');
+        //     if (userID) {
+        //         let msg = "change_idqmwnburqiowe"+ uid + ":" + userID;
+        //         ws.send(msg.trim());
+        //     }
+        //     else{
+        //         console.log("cancel");
+        //     }
+        // });
 
         // // 채팅 전송 버튼 클릭 이벤트 핸들러
         // document.getElementById('sendButton').addEventListener('click', function() {
@@ -285,14 +427,46 @@
         //     }
         // });
 
-        // 채팅 전송 버튼 클릭 이벤트 핸들러
-        document.getElementById('startButton').addEventListener('click', function() {
-            let msg = "liar_gameqmwnburqiowestart";
-            msg = msg.toString('utf-8')
-            console.log(msg)
-            ws.send(msg);
-        });
 
+        // document.getElementById('startButton').addEventListener('click', function() {
+        //     let msg = "liar_gameqmwnburqiowestart";
+        //     msg = msg.toString('utf-8')
+        //     console.log(msg)
+        //     ws.send(msg);
+        // });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var sidebar = document.getElementById("sidebar");
+            var menuIcon = document.querySelector(".menu-icon");
+            var isSidebarOpen = false;
+
+            // 톱니바퀴 아이콘을 클릭했을 때, 사이드바가 열렸는지 확인하는 함수
+            function toggleSidebar() {
+                isSidebarOpen = !isSidebarOpen;
+            }
+
+            // 사이드바를 열고 닫는 함수
+            function toggleSidebarState() {
+                sidebar.classList.toggle('open-sidebar');
+                toggleSidebar();
+            }
+
+            // 톱니바퀴 아이콘 클릭 이벤트 리스너
+            menuIcon.addEventListener('click', toggleSidebarState);
+
+            // document 클릭 이벤트 리스너
+            document.addEventListener('click', function(event) {
+                // 클릭된 요소가 사이드바 또는 톱니바퀴 아이콘인지 확인
+                var isClickInsideSidebar = sidebar.contains(event.target);
+                var isClickOnMenuIcon = menuIcon.contains(event.target);
+                
+                // 만약 사이드바가 열려 있고, 클릭된 요소가 사이드바 이외의 영역이면 사이드바를 닫음
+                if (isSidebarOpen && !isClickInsideSidebar && !isClickOnMenuIcon) {
+                    sidebar.classList.remove('open-sidebar');
+                    isSidebarOpen = false;
+                }
+            });
+        });
     </script>
 </body>
 </html>
