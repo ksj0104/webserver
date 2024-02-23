@@ -12,19 +12,19 @@ let clients = [];
 let player = [];
 let votes = [];
 let _chat_state = 0;
-const https_host = "127.0.0.1"
-const ws_host = "127.0.0.1"
+const https_host = "10.10.30.241"
+const ws_host = "10.10.30.241"
 const wss = new WebSocket.Server({ host: ws_host, port: 3030 });
 
 const vote_time = 20;
-const desc_time = 15;
+const desc_time = 1;
 
-const cate = ["음식", "직업"]
+const cate = ["음식", "직업", "장소"]
 const word =  {};
 
 word["음식"] = ["비빔밥", "배추김치", "삼계탕", "불고기", "떡볶이", "삼겹살", "김밥", "잡채", "김치찌개", "순두부찌개", "냉면", "해물파전"]
 word["직업"] = ["영화배우", "영화감독", "선생님", "개발자", "기획자", "소방관", "경찰관", "대통령", "목사", "신부"]
-
+word["장소"] = ["영화관", "화장실", "도서관", "학교", "헬스클럽", "식당", "야구장", "축구장", "PC방" ,"카페"]
 
 // HTTP 서버 생성
 const server = http.createServer((req, res) => {
@@ -46,8 +46,23 @@ const server = http.createServer((req, res) => {
         };
     }
 
-    if (req.url === '/' || req.url === '/index.html') {
+    if (req.url === '/liar' || req.url === '/') {
         const filePath = path.join(__dirname, 'index.html');
+        // 파일을 비동기적으로 읽습니다.
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+                res.writeHead(404, {'Content-Type': 'text/plain'});
+                res.end('404 Not Found');
+            } else {
+                // 정상적으로 파일을 읽은 경우 HTML 내용을 반환합니다.
+                res.writeHead(200, {'Content-Type': 'text/html'});
+                console.log(`Session ID: ${sessionID}\nUser ID: ${sessions[sessionID].userID}`);
+                res.end(data);
+            }
+        });
+    } 
+    else if (req.url === '/chat') {
+        const filePath = path.join(__dirname, 'index2.html');
         // 파일을 비동기적으로 읽습니다.
         fs.readFile(filePath, (err, data) => {
             if (err) {
@@ -183,7 +198,7 @@ wss.on('connection', function connection(ws) {
         let msg = message.toString('utf-8').split(sp)
         if (msg[0] =='send_chat'){
             if(speak_person == ""){
-                console.log('Received:', message.data);
+                console.log('Received:', msg[1]);
                 boardcastMSG('chat', msg[1])
             }
             else{
@@ -197,7 +212,7 @@ wss.on('connection', function connection(ws) {
                         boardcastMSG('chat', msg[1])
                     }
                     else{
-                        console.log('Received:', message.data);
+                        console.log('[chat]', message.data);
                         boardcastMSG('chat', msg[1])
                     }
                 }
@@ -214,7 +229,7 @@ wss.on('connection', function connection(ws) {
                 clients.forEach(client =>{
                     if(client.userID == nick[1]){
                         client.ws.send(JSON.stringify({ type: 'uid', data: nick[1] }))
-                        console.log("변경 완료");
+                        console.log("[change] ", nick[0], " -> ", nick[1]);
                     }
                 })
             }
@@ -358,7 +373,8 @@ async function game(){
             if(mostFrequentWord == liar){
                 _chat_state = 1;
                 speak_person = mostFrequentWord;
-                boardcastMSG('chat',"[info]" +  mostFrequentWord + "님은 라이어가 맞습니다. 라이어는 제시어를 맞추면 승리할 수 있습니다. 제시어를 입력해주세요. 띄어쓰기는 없으며 가장 마지막에 입력한 단어가 기준이 됩니다.");
+                boardcastMSG('chat',"[info] " +  mostFrequentWord + "님은 라이어가 맞습니다. 라이어는 제시어를 맞추면 승리할 수 있습니다.");
+                boardcastMSG('chat',"[info] " + "제시어를 입력해주세요. 정답은 한글과 영어 대문자로 구성되며 띄어쓰기는 없습니다. 가장 마지막에 입력한 단어가 기준이 됩니다.");
                 for(let i = 15; i >= 0 ; i--){
                     clients.forEach(client => {
                         client.ws.send(JSON.stringify({ type: 'time', data: i}));
